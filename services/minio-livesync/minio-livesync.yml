@@ -1,0 +1,27 @@
+services:
+  minio:
+    image: quay.io/minio/minio
+    container_name: minio
+    restart: unless-stopped
+    networks:
+      - traefik_proxy
+    command: server /data --address ":9000" --console-address ":9001"
+    volumes:
+      - ./data:/data
+    environment:
+      - MINIO_ROOT_USER
+      - MINIO_ROOT_PASSWORD
+    labels:
+      - "traefik.enable=true"
+
+      - "traefik.http.routers.minio-api-rtr.entrypoints=websecure"
+      - "traefik.http.routers.minio-api-rtr.rule=Host(`minio-api.terekhov.press`)"
+      # - "traefik.http.routers.minio-api-rtr.middlewares=chain-no-auth@file"
+      - "traefik.http.routers.minio-api-rtr.service=minio-api-svc"
+      - "traefik.http.services.minio-api-svc.loadbalancer.server.port=9000"
+
+      - "traefik.http.routers.minio-console-rtr.entrypoints=websecure"
+      - "traefik.http.routers.minio-console-rtr.rule=Host(`minio-console.terekhov.press`)"
+      - "traefik.http.routers.minio-console-rtr.middlewares=chain-no-auth@file"
+      - "traefik.http.routers.minio-console-rtr.service=minio-console-svc"
+      - "traefik.http.services.minio-console-svc.loadbalancer.server.port=9001"

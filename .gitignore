@@ -1,9 +1,15 @@
 secrets/
 logs/
+cache/
+docker-gc-exclude
+data/
+pgdata/
 
 # Traefik
-traefik/logs
-traefik/acme.json
+acme.json
+
+# Torrserver
+services/torrserver/config
 
 # Docker Compose environment files
 *.env

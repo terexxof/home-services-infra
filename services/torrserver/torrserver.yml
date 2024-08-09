@@ -1,0 +1,25 @@
+services:
+  torrserver:
+    image: ghcr.io/yourok/torrserver
+    container_name: torrserver
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    networks:
+    - traefik_proxy
+    environment:
+      - TS_PORT=5665
+      - TS_DONTKILL=1
+      - TS_HTTPAUTH=1
+      - TS_TORR_DIR=/opt/ts/torrents
+      - TS_CONF_PATH=/opt/ts/config
+    volumes:
+      - './cache:/opt/ts/torrents'
+      - './config:/opt/ts/config'
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ts-rtr.entrypoints=websecure"
+      - "traefik.http.routers.ts-rtr.rule=Host(`ts.$DOMAINNAME`)"
+      - "traefik.http.routers.ts-rtr.middlewares=chain-no-auth@file"
+      - "traefik.http.routers.ts-rtr.service=ts-svc"
+      - "traefik.http.services.ts-svc.loadbalancer.server.port=5665"

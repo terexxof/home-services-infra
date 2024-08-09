@@ -21,5 +21,8 @@ secrets:
     file: ./secrets/cf_dns_api_token
 
 include:
-  - socket_proxy/socket-proxy-compose.yml
-  - traefik/traefik-compose.yml
+  - services/socket-proxy.yml
+  - traefik/traefik.yml
+  - services/torrserver/torrserver.yml
+  - services/docker-gc/docker-gc.yml
+  - services/minio-livesync/minio-livesync.yml
