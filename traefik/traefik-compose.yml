@@ -1,0 +1,91 @@
+services:
+  traefik:
+    image: traefik:v3.1
+    container_name: traefik
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    networks:
+      traefik_proxy:
+        ipv4_address: 192.168.68.254
+      socket_proxy:
+    ports:
+      - target: 80
+        published: 80
+        protocol: tcp
+        mode: host
+      - target: 443
+        published: 443
+        protocol: tcp
+        mode: host
+      # - target: 8080 # need to enable --api.insecure=true
+      #   published: 8080
+      #   protocol: tcp
+      #   mode: host
+    command:
+      - --global.checkNewVersion=true
+      - --global.sendAnonymousUsage=false
+
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.web.http.redirections.entrypoint.permanent=true
+
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure.forwardedHeaders.trustedIPs=$CLOUDFLARE_IPS,$LOCAL_IPS # Allow these IPs to set the X-Forwarded-* headers - Cloudflare IPs: https://www.cloudflare.com/ips/
+      - --entrypoints.websecure.http.tls=true
+      - --entrypoints.websecure.http.tls.options=tls-opts@file
+      - --entrypoints.websecure.http.tls.certresolver=dns-cloudflare
+      - --entrypoints.websecure.http.tls.domains[0].main=$DOMAINNAME
+      - --entrypoints.websecure.http.tls.domains[0].sans=*.$DOMAINNAME
+
+      - --api=true
+      - --api.dashboard=true
+      # - --api.insecure=true
+
+      # - --serversTransport.insecureSkipVerify=true
+
+      - --log=true
+      - --log.level=DEBUG # (Default: error) DEBUG, INFO, WARN, ERROR, FATAL, PANIC
+      - --log.format=common # common, json, logfmt
+      - --log.filePath=/logs/traefik.log
+
+      - --accessLog=true
+      - --accesslog.format=common # common, json, logfmt
+      - --accessLog.filePath=/logs/access.log
+      - --accessLog.bufferingSize=100
+      - --accessLog.filters.statusCodes=204-299,400-499,500-599
+
+      - --providers.docker=true
+      # - --providers.docker.endpoint=unix:///var/run/docker.sock # Disable for Socket Proxy. Enable otherwise.
+      - --providers.docker.endpoint=tcp://socket-proxy:2375 # Enable for Socket Proxy. Disable otherwise.
+      - --providers.docker.exposedByDefault=false
+      - --providers.docker.network=traefik_proxy
+      - --providers.file.directory=/config # Load dynamic configuration from one or more .toml or .yml files in a directory
+      - --providers.file.watch=true # Only works on top level files in the rules folder
+
+      # - --certificatesResolvers.dns-cloudflare.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory # LetsEncrypt Staging Server - uncomment when testing
+      - --certificatesResolvers.dns-cloudflare.acme.storage=/acme.json
+      - --certificatesResolvers.dns-cloudflare.acme.dnsChallenge.provider=cloudflare
+      - --certificatesResolvers.dns-cloudflare.acme.dnsChallenge.resolvers=1.1.1.1:53,1.0.0.1:53
+      - --certificatesResolvers.dns-cloudflare.acme.dnsChallenge.delayBeforeCheck=90 # To delay DNS check and reduce LE hitrate
+    volumes:
+      # - /var/run/docker.sock:/var/run/docker.sock:ro # Enable if not using Socket Proxy
+      - ./config:/config:ro # Dynamic File Provider directory
+      - ./acme.json:/acme.json
+      - ./logs:/logs
+    environment:
+      - TZ
+      - CF_DNS_API_TOKEN_FILE=/run/secrets/cf_dns_api_token    
+      - DOMAINNAME
+      - CLOUDLFARE_IPS
+      - LOCAL_IPS
+    secrets:
+      - cf_dns_api_token
+      - basic_auth_credentials
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik-rtr.entrypoints=websecure,web"
+      - "traefik.http.routers.traefik-rtr.rule=Host(`traefik.$DOMAINNAME`)"
+      - "traefik.http.routers.traefik-rtr.service=api@internal"
+      - "traefik.http.routers.traefik-rtr.middlewares=middlewares-basic-auth@file"

@@ -1,0 +1,31 @@
+secrets/
+logs/
+
+# Traefik
+traefik/logs
+traefik/acme.json
+
+# Docker Compose environment files
+*.env
+
+# Log files
+*.log
+*.tmp
+
+# Build directories
+build/
+
+# IDE and editor specific files
+.vscode/
+.idea/
+*.sublime-workspace
+
+# Local configuration
+*.local
+*.pid
+
+# Docker Compose override
+docker-compose.override.yml
+
+# MacOS specific
+.DS_Store

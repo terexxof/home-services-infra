@@ -1,0 +1,25 @@
+networks:
+  default:
+    driver: bridge
+  socket_proxy:
+    name: socket_proxy
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.67.0/24
+  traefik_proxy:
+    name: traefik_proxy
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.68.0/24
+
+secrets:
+  basic_auth_credentials:
+    file: ./secrets/basic_auth_credentials
+  cf_dns_api_token:
+    file: ./secrets/cf_dns_api_token
+
+include:
+  - socket_proxy/socket-proxy-compose.yml
+  - traefik/traefik-compose.yml
