@@ -26,3 +26,5 @@ include:
   - services/torrserver/torrserver.yml
   - services/docker-gc/docker-gc.yml
   - services/minio-livesync/minio-livesync.yml
+  - services/linkwarden/linkwarden.yml
+
